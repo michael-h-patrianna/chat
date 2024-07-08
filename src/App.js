@@ -4,13 +4,28 @@ import React from "react";
 import PubNub from "pubnub";
 import { PubNubProvider } from "pubnub-react";
 import { Chat, MessageList, MessageInput } from "@pubnub/react-chat-components";
+import emojiData from "@emoji-mart/data";
+import Picker  from "@emoji-mart/react";
+
+/* create a random username */
+const adjectives = ['Happy', 'Clever', 'Brave', 'Calm', 'Eager', 'Gentle', 'Jolly', 'Kind', 'Lively', 'Nice', 'Proud', 'Silly', 'Witty'];
+const nouns = ['Panda', 'Tiger', 'Elephant', 'Dolphin', 'Eagle', 'Lion', 'Wolf', 'Bear', 'Fox', 'Owl', 'Hawk', 'Deer', 'Rabbit'];
+
+function generateUsername() {
+  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+  const noun = nouns[Math.floor(Math.random() * nouns.length)];
+  const number = Math.floor(Math.random() * 100);
+  return `${adjective}${noun}${number}`;
+}
+
+const myUserName = generateUsername()
 
 /* Create PubNub instance*/
 const pubnub = new PubNub({
   publishKey: 'pub-c-dc6b6d35-b1b6-45c4-8a0a-5ce8cd792219',
   subscribeKey: 'sub-c-727207b9-420e-4e21-b1ff-ff57ea44f2df',
   secretKey: 'sec-c-ZTBjZGEyMmYtOTc1Yy00ZWNkLTlkZGEtODBkYmUzMGYzZmVm',
-  userId: "myFirstUser",
+  userId: myUserName,
 });
 
 const currentChannel = "default";
@@ -34,7 +49,7 @@ pubnub.grantToken(
   });
 
 
-const theme = "light";
+const theme = "dark";
 
 /* Display the chat */
 function App() {
@@ -47,9 +62,10 @@ function App() {
         options, like the current channel and the general theme for the app. */}
           <MessageList 
           fetchMessages={100} // Fetch the last 100 messages
-                  
-        ></MessageList>
-        <MessageInput />
+          enableReactions= {true} // Enable reactions
+          reactionsPicker={<Picker data={emojiData} />}         
+        />
+        <MessageInput emojiPicker={<Picker data={emojiData} />}  />
       </Chat>
     </PubNubProvider>
   );
