@@ -1,75 +1,66 @@
-import React from 'react';
-import PubNub from 'pubnub';
-import { PubNubProvider, usePubNub } from 'pubnub-react';
-import { useState, useEffect } from 'react';
+import React, { useEffect, useState } from "react";
+import PubNub from "pubnub";
+import { PubNubProvider, usePubNub } from "pubnub-react";
+import { Chat, MessageList, MessageInput } from "@pubnub/react-chat-components";
 
-
-function makeid(length) { // Used to create new user ids 
-  var result           = '';
-  var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  var charactersLength = characters.length;
-  for ( var i = 0; i < length; i++ ) {
-      result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  return result;
-}
+// Assume this comes from your authentication system
+const authenticatedUser = {
+  id: "user1",
+  name: "Alice",
+  authToken: "user1-auth-token"
+};
 
 const pubnub = new PubNub({
   publishKey: 'pub-c-dc6b6d35-b1b6-45c4-8a0a-5ce8cd792219',
   subscribeKey: 'sub-c-727207b9-420e-4e21-b1ff-ff57ea44f2df',
-  uuid:  'Anon-' + makeid(5)
+  userId: authenticatedUser.id,
+  authKey: authenticatedUser.authToken,
 });
 
-const channel = 'awesome-channel';
+const currentChannel = "Default";
+const theme = "light";
 
-function Chat() {
+function ChatComponent() {
   const pubnub = usePubNub();
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
+  const [hasPostedHello, setHasPostedHello] = useState(false);
 
   useEffect(() => {
-    pubnub.subscribe({ channels: [channel] });
+    pubnub.subscribe({ channels: [currentChannel] });
 
-    pubnub.addListener({
-      message: messageEvent => {
-        setMessages(messages => [...messages, messageEvent.message]);
-      },
-    });
+    // Fake user posts "Hello Chat"
+    if (!hasPostedHello) {
+      const fakeUser = {
+        id: "fakeUser",
+        name: "Fake User"
+      };
+
+      pubnub.publish({
+        channel: currentChannel,
+        message: {
+          type: "text",
+          text: "Hello Chat!",
+          sender: fakeUser,
+        },
+      }).then(() => setHasPostedHello(true));
+    }
 
     return () => {
-      pubnub.unsubscribe({ channels: [channel] });
+      pubnub.unsubscribe({ channels: [currentChannel] });
     };
-  }, [pubnub]);
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    pubnub.publish({ channel, message: input });
-    setInput('');
-  };
+  }, [pubnub, hasPostedHello]);
 
   return (
-    <div>
-      <div style={{height: '300px', overflowY: 'scroll', border: '1px solid black', padding: '10px'}}>
-        {messages.map((message, index) => (
-          <div key={`message-${index}`}>{message}</div>
-        ))}
-      </div>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <button type="submit">Send</button>
-      </form>
-    </div>
+    <Chat currentChannel={currentChannel} theme={theme}>
+      <MessageList />
+      <MessageInput />
+    </Chat>
   );
 }
 
 function App() {
   return (
     <PubNubProvider client={pubnub}>
-      <Chat />
+      <ChatComponent />
     </PubNubProvider>
   );
 }
