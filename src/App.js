@@ -4,6 +4,7 @@ import { PubNubProvider } from "pubnub-react";
 import { Chat, MessageList, MessageInput } from "@pubnub/react-chat-components";
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
+import "./index.css";
 
 // Arrays for generating random usernames
 const adjectives = ['Happy', 'Clever', 'Brave', 'Calm', 'Eager', 'Gentle', 'Jolly', 'Kind', 'Lively', 'Nice', 'Proud', 'Silly', 'Witty'];
@@ -160,6 +161,23 @@ function App() {
     const isMyMessage = uuid === myUserName;
     const isFlagged = message.actions && message.actions.reported;
 
+    console.log(message)
+ // Render emoji reactions
+ const renderReactions = () => {
+  if (!message.actions || !message.actions.reaction) return null;
+  
+  return (
+    <div className="pn-msg__reactions">
+      {Object.entries(message.actions.reaction).map(([emoji, users]) => (
+        <span key={emoji} className="pn-msg__reaction" title={users.map(u => u.uuid).join(', ')}>
+          {emoji} {users.length}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+
     // Render the message
     return (
       <div className={`pn-msg ${isMyMessage ? 'pn-msg--own' : ''}`}>
@@ -179,6 +197,7 @@ function App() {
             <div className="pn-msg__bubble" style={{ fontWeight: isMyMessage ? 'bold' : 'normal' }}>
               {message.message.text}
             </div>
+            {renderReactions()}
           </div>
         </div>
       </div>
