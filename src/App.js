@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useEffect, useCallback, useMemo } from "react";
 import PubNub from "pubnub";
 import { PubNubProvider } from "pubnub-react";
 import { Chat, MessageList, MessageInput } from "@pubnub/react-chat-components";
@@ -64,7 +64,7 @@ function App() {
   };
 
   // Handler for reporting a user
-  const handleReportUser = (message) => {
+  const handleReportUser = useCallback((message) => {
     console.log("User reported:", message.uuid);
     console.log("Reported message:", message.message.text);
     console.log("Channel:", message.channel);
@@ -76,7 +76,7 @@ function App() {
       channel: message.channel,
       messageTimetoken: message.timetoken,
       action: {
-        type: 'flagged',
+        type: 'reported',
         value: 'message is inappropriate',
       },
     }).then((response) => {
@@ -84,10 +84,10 @@ function App() {
     }).catch((error) => {
       console.error("Error flagging message:", error);
     });
-  };
+  }, [pubnub]); // Add pubnub as a dependency
 
   // Handler for soft-deleting a message
-  const handleDeleteMessage = (message) => {
+  const handleDeleteMessage = useCallback((message) => {
     // Soft-delete by flagging the message as "deleted"
     pubnub.addMessageAction({
       channel: message.channel,
@@ -101,19 +101,18 @@ function App() {
     }).catch((error) => {
       console.error("Error soft deleting message:", error);
     });
-  };
+  }, [pubnub]); // Add pubnub as a dependency
 
   // Set up PubNub listener and subscription
   useEffect(() => {
     // Listen for message actions (e.g., flagging, deletion)
     const listener = {
       messageAction: (event) => {
-        console.log(event)
         if (event.event === 'added') {
           if (event.data.type === 'deleted') {
             console.log("Message deleted event:", event.data.messageTimetoken);
-          } else if (event.data.type === 'flagged') {
-            console.log("Message flagged event:", event.data.messageTimetoken);           
+          } else if (event.data.type === 'reported') {
+            console.log("Message reported event:", event.data.messageTimetoken);           
           }
         }
       }
@@ -129,7 +128,7 @@ function App() {
       pubnub.removeListener(listener);
       pubnub.unsubscribe({ channels: [currentChannel] });
     };
-  }, [pubnub]);
+  }, [pubnub]); // Add pubnub as a dependency
 
   // Custom message renderer
   const messageRenderer = useCallback(({ message }) => {
@@ -159,7 +158,7 @@ function App() {
     const avatarColor = getPredefinedColor(uuid);
     const initials = getNameInitials(uuid);
     const isMyMessage = uuid === myUserName;
-    const isFlagged = message.actions && message.actions.flagged;
+    const isFlagged = message.actions && message.actions.reported;
 
     // Render the message
     return (
@@ -174,7 +173,7 @@ function App() {
             </div>
             {isFlagged && (
               <div className="pn-msg__flagged" style={{ fontSize: '0.8em', color: '#FF6B6B' }}>
-                flagged
+                reported
               </div>
             )}
             <div className="pn-msg__bubble" style={{ fontWeight: isMyMessage ? 'bold' : 'normal' }}>
