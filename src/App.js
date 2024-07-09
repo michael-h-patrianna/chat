@@ -35,7 +35,7 @@ function App() {
       secretKey: process.env.REACT_APP_PUBNUB_SECRET_KEY,
       userId: myUserName,
     });
-    
+
     // Grant access token for the user (should be done on the backend in production)
     pb.grantToken(
       {
@@ -113,14 +113,14 @@ function App() {
           if (event.data.type === 'deleted') {
             console.log("Message deleted event:", event.data.messageTimetoken);
           } else if (event.data.type === 'reported') {
-            console.log("Message reported event:", event.data.messageTimetoken);           
+            console.log("Message reported event:", event.data.messageTimetoken);
           }
         }
       }
     };
 
     pubnub.addListener(listener);
-    
+
     // Subscribe to the current channel
     pubnub.subscribe({ channels: [currentChannel] });
 
@@ -147,7 +147,7 @@ function App() {
         .toUpperCase()
         .slice(0, 2);
     };
-    
+
     // Generate a color for the avatar based on the user's UUID
     const getPredefinedColor = (uuid) => {
       const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];
@@ -161,21 +161,21 @@ function App() {
     const isMyMessage = uuid === myUserName;
     const isFlagged = message.actions && message.actions.reported;
 
-    console.log(message)
- // Render emoji reactions
- const renderReactions = () => {
-  if (!message.actions || !message.actions.reaction) return null;
-  
-  return (
-    <div className="pn-msg__reactions">
-      {Object.entries(message.actions.reaction).map(([emoji, users]) => (
-        <span key={emoji} className="pn-msg__reaction" title={users.map(u => u.uuid).join(', ')}>
-          {emoji} {users.length}
-        </span>
-      ))}
-    </div>
-  );
-};
+
+    // Render emoji reactions
+    const renderReactions = () => {
+      if (!message.actions || !message.actions.reaction) return null;
+
+      return (
+        <div className="pn-msg__reactions">
+          {Object.entries(message.actions.reaction).map(([emoji, users]) => (
+            <span key={emoji} className="pn-msg__reaction" title={users.map(u => u.uuid).join(', ')}>
+              {emoji} {users.length}
+            </span>
+          ))}
+        </div>
+      );
+    };
 
 
     // Render the message
@@ -229,9 +229,9 @@ function App() {
             </>
           )}
         />
-        <MessageInput 
-        emojiPicker={<Picker data={emojiData} />}  // Use emojiData as picker and make it accessible via a button next to the message input field
-        /> 
+        <MessageInput
+          emojiPicker={<Picker data={emojiData} />}  // Use emojiData as picker and make it accessible via a button next to the message input field
+        />
       </Chat>
     </PubNubProvider>
   );
