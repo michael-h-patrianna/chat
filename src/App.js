@@ -5,10 +5,11 @@ import { Chat, MessageList, MessageInput } from "@pubnub/react-chat-components";
 import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 
-/* create a random username */
+// Arrays for generating random usernames
 const adjectives = ['Happy', 'Clever', 'Brave', 'Calm', 'Eager', 'Gentle', 'Jolly', 'Kind', 'Lively', 'Nice', 'Proud', 'Silly', 'Witty'];
 const nouns = ['Panda', 'Tiger', 'Elephant', 'Dolphin', 'Eagle', 'Lion', 'Wolf', 'Bear', 'Fox', 'Owl', 'Hawk', 'Deer', 'Rabbit'];
 
+// Function to generate a random username
 function generateUsername() {
   const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
   const noun = nouns[Math.floor(Math.random() * nouns.length)];
@@ -16,11 +17,16 @@ function generateUsername() {
   return `${adjective}${noun}${number}`;
 }
 
+// Generate a random username for the current user
 const myUserName = generateUsername()
+
+// Set the channel name and theme
 const currentChannel = "default";
 const theme = "dark"; // or "light"
 
+// Main App component
 function App() {
+  // Create the PubNub client instance
   const pubnub = useMemo(() => {
     const pb = new PubNub({
       publishKey: process.env.REACT_APP_PUBNUB_PUBLISH_KEY,
@@ -28,6 +34,8 @@ function App() {
       secretKey: process.env.REACT_APP_PUBNUB_SECRET_KEY,
       userId: myUserName,
     });
+    
+    // Grant access token for the user (should be done on the backend in production)
     pb.grantToken(
       {
         ttl: 15,
@@ -50,18 +58,20 @@ function App() {
     return pb;
   }, []);
 
+  // Error handler for PubNub operations
   const onError = (error) => {
     console.log("Error:", error.message, error.status);
   };
 
+  // Handler for reporting a user
   const handleReportUser = (message) => {
-    console.log(message)
     console.log("User reported:", message.uuid);
     console.log("Reported message:", message.message.text);
     console.log("Channel:", message.channel);
     console.log("Created at:", message.message.createdAt);
     console.log("Url to chat:", window.location.href)
 
+    // Flag the message as reported
     pubnub.addMessageAction({
       channel: message.channel,
       messageTimetoken: message.timetoken,
@@ -76,9 +86,9 @@ function App() {
     });
   };
 
+  // Handler for soft-deleting a message
   const handleDeleteMessage = (message) => {
-    console.log(message)
-
+    // Soft-delete by flagging the message as "deleted"
     pubnub.addMessageAction({
       channel: message.channel,
       messageTimetoken: message.timetoken,
@@ -93,7 +103,9 @@ function App() {
     });
   };
 
+  // Set up PubNub listener and subscription
   useEffect(() => {
+    // Listen for message actions (e.g., flagging, deletion)
     const listener = {
       messageAction: (event) => {
         console.log(event)
@@ -108,24 +120,25 @@ function App() {
     };
 
     pubnub.addListener(listener);
+    
+    // Subscribe to the current channel
     pubnub.subscribe({ channels: [currentChannel] });
 
+    // Cleanup function
     return () => {
       pubnub.removeListener(listener);
       pubnub.unsubscribe({ channels: [currentChannel] });
     };
   }, [pubnub]);
 
-
-  /* custom message renderer */
+  // Custom message renderer
   const messageRenderer = useCallback(({ message }) => {
-   
-    // do not display deleted messages
+    // Don't display deleted messages
     if (message.actions && message.actions.deleted) {
       return null;
     }
 
-    // our avatar displays the initals of the username
+    // Generate initials for the avatar
     const getNameInitials = (name) => {
       return name
         .split(' ')
@@ -135,20 +148,20 @@ function App() {
         .slice(0, 2);
     };
     
-    // get a color for the avatar
+    // Generate a color for the avatar based on the user's UUID
     const getPredefinedColor = (uuid) => {
       const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8'];
       const index = uuid.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
       return colors[index];
     };
 
-    const uuid = message.uuid || message.publisher || ""; // for history the username is in uuid, for newly posted messages it's in publisher
+    const uuid = message.uuid || message.publisher || "";
     const avatarColor = getPredefinedColor(uuid);
     const initials = getNameInitials(uuid);
     const isMyMessage = uuid === myUserName;
     const isFlagged = message.actions && message.actions.flagged;
 
-    // display
+    // Render the message
     return (
       <div className={`pn-msg ${isMyMessage ? 'pn-msg--own' : ''}`}>
         <div className="pn-msg__avatar" style={{ backgroundColor: avatarColor }}>
@@ -177,11 +190,11 @@ function App() {
     <PubNubProvider client={pubnub}>
       <Chat {...{ currentChannel, theme, onError }}>
         <MessageList
-          fetchMessages={100}
-          enableReactions={true}
-          reactionsPicker={<Picker data={emojiData} />}
-          messageRenderer={messageRenderer}
-          extraActionsRenderer={(message) => (
+          fetchMessages={100} // Fetch the last 100 messages
+          enableReactions={true} // Allow users to react with emojis
+          reactionsPicker={<Picker data={emojiData} />} // Use emojiData to pick emojis
+          messageRenderer={messageRenderer} // Use our custom message renderer
+          extraActionsRenderer={(message) => ( // Add extra action buttons to each message
             <>
               <div
                 onClick={() => handleReportUser(message)}
@@ -198,7 +211,9 @@ function App() {
             </>
           )}
         />
-        <MessageInput emojiPicker={<Picker data={emojiData} />} />
+        <MessageInput 
+        emojiPicker={<Picker data={emojiData} />}  // Use emojiData as picker and make it accessible via a button next to the message input field
+        /> 
       </Chat>
     </PubNubProvider>
   );
