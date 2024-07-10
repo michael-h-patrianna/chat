@@ -6,20 +6,20 @@ import emojiData from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
 import "./index.css";
 
-// Arrays for generating random usernames
-const adjectives = ['Happy', 'Clever', 'Brave', 'Calm', 'Eager', 'Gentle', 'Jolly', 'Kind', 'Lively', 'Nice', 'Proud', 'Silly', 'Witty'];
-const nouns = ['Panda', 'Tiger', 'Elephant', 'Dolphin', 'Eagle', 'Lion', 'Wolf', 'Bear', 'Fox', 'Owl', 'Hawk', 'Deer', 'Rabbit'];
+// Predefined users
+const predefinedUsers = [
+  { username: "HappyPanda1", uuid: "user-1" },
+  { username: "CleverTiger2", uuid: "user-2" },
+  { username: "BraveEagle3", uuid: "user-3" }
+];
 
-// Function to generate a random username
-function generateUsername() {
-  const adjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const noun = nouns[Math.floor(Math.random() * nouns.length)];
-  const number = Math.floor(Math.random() * 100);
-  return `${adjective}${noun}${number}`;
+// Function to select a random user from predefined users
+function selectRandomUser() {
+  return predefinedUsers[Math.floor(Math.random() * predefinedUsers.length)];
 }
 
-// Generate a random username for the current user
-const myUserName = generateUsername()
+// Select a random user for this session
+const currentUser = selectRandomUser();
 
 // Set the channel name and theme
 const currentChannel = "default";
@@ -33,14 +33,14 @@ function App() {
       publishKey: process.env.REACT_APP_PUBNUB_PUBLISH_KEY,
       subscribeKey: process.env.REACT_APP_PUBNUB_SUBSCRIBE_KEY,
       secretKey: process.env.REACT_APP_PUBNUB_SECRET_KEY,
-      userId: myUserName,
+      userId: currentUser.uuid,
     });
 
     // Grant access token for the user (should be done on the backend in production)
     pb.grantToken(
       {
         ttl: 15,
-        authorized_uuid: "my-authorized-uuid",
+        authorized_uuid: currentUser.uuid,
         resources: {
           channels: {
             currentChannel: {
@@ -156,9 +156,10 @@ function App() {
     };
 
     const uuid = message.uuid || message.publisher || "";
+    const user = predefinedUsers.find(u => u.uuid === uuid) || { username: uuid };
     const avatarColor = getPredefinedColor(uuid);
-    const initials = getNameInitials(uuid);
-    const isMyMessage = uuid === myUserName;
+    const initials = getNameInitials(user.username);
+    const isMyMessage = uuid === currentUser.uuid;
     const isFlagged = message.actions && message.actions.reported;
 
 
@@ -187,7 +188,7 @@ function App() {
         <div className="pn-msg__main">
           <div className="pn-msg__content">
             <div className="pn-msg__title">
-              <span className="pn-msg__author">{uuid}</span>
+              <span className="pn-msg__author">{user.username}</span>
             </div>
             {isFlagged && (
               <div className="pn-msg__flagged" style={{ fontSize: '0.8em', color: '#FF6B6B' }}>
